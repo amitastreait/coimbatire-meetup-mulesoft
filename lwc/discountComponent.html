@@ -1,0 +1,47 @@
+<!--
+    @description       : 
+    @author            : Amit Singh
+    @group             : 
+    @last modified on  : 05-14-2021
+    @last modified by  : Amit Singh
+    Modifications Log 
+    Ver   Date         Author       Modification
+    1.0   05-14-2021   Amit Singh   Initial Version
+-->
+<template>
+    <lightning-card  variant="Narrow"  title="Check Discount Details" icon-name="utility:money">
+
+        <lightning-spinner alternative-text="Loading" size="small" variant="brand" if:true={isSpiner}></lightning-spinner>
+
+        <div class="slds-p-horizontal_small">
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col">
+                    <lightning-input type="text" name="customerId" label="Customer Identifier" required
+                        onchange={handleChange}>
+                    </lightning-input>
+                </div>
+                <div class="slds-col">
+                    <lightning-input type="text" max-length="2" min-length="2" name="countryCode" label="Country Code" required
+                        onchange={handleChange}>
+                    </lightning-input>
+                </div>
+            </div>
+            <div class="slds-grid slds-wrap slds-p-top_small" if:true={_result}>
+                <p>
+                    Message : {_result.Message__c} &nbsp; &nbsp;
+                </p>
+                <p>
+                    Discount Amount : {_result.Discount__c}
+                </p>
+            </div>
+            <div class="slds-grid slds-wrap slds-p-top_small">
+                <div class="slds-col">
+                    <lightning-button variant="brand" label="Check Discount Availability" title="Check Discount Availability" onclick={handleCheckDiscount}></lightning-button>
+                </div>
+            </div>
+        </div>
+        <div class="slds-p-horizontal_small">
+
+        </div>
+    </lightning-card>
+</template>
