@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="pe-testFlow" doc:id="c7c0ee9e-724e-467e-b389-8d17ce154fb2" >
+		<salesforce:subscribe-channel-listener doc:name="Subscribe channel listener" doc:id="18aa79cc-580b-4ebf-959e-eac50cc4a288" config-ref="Salesforce_Config" streamingChannel="/event/PricingEvent__e"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c3375fc6-cec9-4d05-8c0f-36f79f4c5255" message="#[payload]"/>
+		<flow-ref doc:name="Flow Reference[publish-subscribe-flow]" doc:id="f7336345-a89d-4ebb-a840-efa6a4e6c130" name="publish-subscribe-flow"/>
+	</flow>
+</mule>
