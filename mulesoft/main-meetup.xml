@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="publish-subscribe-flow" doc:id="a17936ce-22d6-40a0-adbe-51936d84b3cf" initialState="started">
+		<logger level="INFO" doc:name="Logger" doc:id="cea67e80-8abc-4ad3-8647-94abf6138124" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="fdf04a3e-0eeb-411d-823b-2c20bf5bb20e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	payload : payload.data.payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value='#[payload.payload.CustomerId__c]' doc:name="Set Variable" doc:id="81683f36-160a-4d7a-ba1b-a7a4faac69e1" variableName="customerId"/>
+		<flow-ref doc:name="Flow Reference[Check Discount]" doc:id="4474f3f6-2da5-40d5-bdc0-4fc216f25dcf" name="check-discount-flow"/>
+		<salesforce:publish-platform-event-message platformEventName="DiscountEvent__e" doc:name="Publish Discount Event" doc:id="d4601c9c-f318-4760-89a6-c21062b85fac" config-ref="Salesforce_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="b0e138ec-5392-48ff-8ce8-a0076c00d38c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="bf18cbad-27b3-47a4-b4f5-88208edfaaf9" >
+				<set-variable value="401" doc:name="Set Variable" doc:id="14fc80e7-e7b8-4225-97e8-824a05758fd7" variableName="code"/>
+				<ee:transform doc:name="Transform Message" doc:id="2ba8e37d-a1b4-46ad-a8ed-64a34b274136" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: error.detailedDescription,
+	childError : error.childErrors.detailedDescription,
+	errorType : error.errorType
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="check-discount-flow" doc:id="d960df9d-3716-42b8-bcb3-d9987c5e36fc" >
+		<db:select doc:name="Select[customer-pricing.discount]" doc:id="a752fcc0-ab63-4435-8f6b-6dcb3dfa0571" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM `customer-pricing`.discount Where customer = :customerId LIMIT 1]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{ 
+	customerId : vars.customerId
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="1099fcb1-8687-4753-8441-3e500a237daa" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="83fabcea-3a50-4386-96c4-d726c3e31e91" >
+			<when expression="#[payload.customer != null]">
+				<ee:transform doc:name="Transform Message" doc:id="f1392635-4b7f-434e-90af-4f15e95f411c" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	"Message__c" : "Eligible FOR Discount",
+	"Discount__c" : payload.discount
+}]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="b449142d-d7be-438f-9f30-cd0e368859b3" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	"Message__c"  : "Not Eligible FOR Discount",
+	"Discount__c" : 0.00
+}]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="90d2387f-cb29-478c-afad-f9c3445f5e56" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="hello-max-mule" doc:id="840ea1ec-a53a-4b5e-9cf1-dd463a85f4a4" >
+		<http:listener doc:name="GET :/ Hello" doc:id="bb8da9b5-21a5-4f5e-82f7-e46eccd19a59" config-ref="HTTP_Listener_config" path="/hello"/>
+		<ee:transform doc:name="Transform Message" doc:id="9531b54e-5461-4ba9-9874-03bb16a2350d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
