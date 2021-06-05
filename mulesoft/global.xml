@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="f192c278-1502-4538-a73a-fe3fa85197e3" >
+		<salesforce:basic-connection username="USER_NAME" password="PASS_WORD" />
+	</salesforce:sfdc-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="29befd84-725d-460e-a75d-0f358dea26b4" basePath="${http.basePath}" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="01f9f005-2d0c-462d-b3a5-93b06bbbda70" basePath="/v1" >
+		<http:request-connection host="localhost" port="8081" />
+	</http:request-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="520a2699-0ad8-4296-9971-56debe5c9122" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="PASSWORD_HERE" database="customer-pricing" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="c88bdd01-7291-454c-9da0-8c2baa5e7fe4" file="config.yaml" />
+	<configuration doc:name="Configuration" doc:id="d4da71f6-f1c0-4ed4-8ced-3b3a933f89a7" defaultErrorHandler-ref="globalError_Handler" />
+	<global-property doc:name="Global Property" doc:id="995323fb-f62b-42bf-aa2b-2b9131e8907a" name="env" value="sandbox" />
+	<error-handler name="globalError_Handler" doc:id="83803451-4682-40fc-ab0a-196d6349c0ce" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="afa6393b-ec3d-48ff-b7e6-47ed621dd283" >
+			<set-variable value="512" doc:name="Set Variable[code]" doc:id="111d3a56-f7b3-480b-8c96-9271bd224b16" variableName="code"/>
+			<ee:transform doc:name="Error-JSON" doc:id="efbcf292-a664-4f09-b74f-7130392bb080" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : error.detailedDescription,
+	childError : error.childErrors.detailedDescription,
+	errorType: error.errorType
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+</mule>
